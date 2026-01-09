@@ -1,6 +1,9 @@
+from tkinter import messagebox
 import tkinter as tk
+import random
 
 SIZE = 10
+MINES = 15
 
 class MineSweeper:
     def __init__(self, root):
@@ -9,9 +12,10 @@ class MineSweeper:
         self.buttons = {}
         self.flags = set()
         self.opened = set()
-        self.mines = {(2, 5)}
+        self.mines = set()
         self.frame = tk.Frame(root)
         self.frame.pack()
+        self.first_click = True
         
         for r in range(SIZE):
             for c in range(SIZE):
@@ -37,6 +41,16 @@ class MineSweeper:
         
         return count
 
+    def place_mines(self, r, c):
+        cells = []
+        
+        for nr in range(SIZE):
+            for nc in range(SIZE):
+                if (nr, nc) != (r, c):
+                    cells.append((nr, nc))
+                    
+        self.mines.update(random.sample(cells, MINES))
+        
     def open(self, r, c):
         if (r, c) in self.flags or (r, c) in self.opened:
             return
@@ -45,6 +59,10 @@ class MineSweeper:
         btn = self.buttons[(r, c)]
         btn.config(relief=tk.SUNKEN, state=tk.DISABLED)
         
+        if self.first_click:
+            self.place_mines(r, c)
+            self.first_click = False
+            
         self.reveal(r, c)
     
     def toggle_flag(self, r, c):
@@ -60,12 +78,48 @@ class MineSweeper:
             self.flags.add((r, c))
             btn.config(text = "🚩")
             
+    def open_cells_around_empty(self, r, c):
+        neighbours = [
+            (r - 1, c - 1),
+            (r - 1, c),
+            (r - 1, c + 1),
+            (r, c - 1),
+            (r, c + 1),
+            (r + 1, c - 1),
+            (r + 1, c),
+            (r + 1, c + 1),
+        ]
+
+        for coords in neighbours:
+            if coords in self.buttons and coords not in self.opened:
+                self.open(*coords)
+            
     def reveal(self, r, c):
         btn = self.buttons[(r, c)]
+        value = self.count_mines(r, c) or ""
+        
         if (r, c) in self.mines:
-            btn.config(text = "💣", bg = "red")
+            self.game_over(win=False)
+            return
+        elif value == "":
+            self.open_cells_around_empty(r, c)
+        elif len(self.opened) == SIZE * SIZE - MINES:
+            self.game_over(win=True)
+            return
         else: 
-            btn.config(text = str(self.count_mines(r, c)))
+            btn.config(text = str(value))
+            
+    def game_over(self, win):
+        color = "green" if win else "red"
+        for coords in self.mines:
+            if coords in self.buttons:
+                self.buttons[coords].config(text="💣", bg=color)
+                
+        for btn in self.buttons.values():
+            btn.config(state=tk.DISABLED)
+            
+        msg = "WIN 🎉" if win else "LOSS 💥"
+        messagebox.showinfo("Game Over", msg)
 
 if __name__ == "__main__":
     root = tk.Tk()
