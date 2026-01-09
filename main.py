@@ -108,6 +108,15 @@ class MineSweeper:
             return
         else: 
             btn.config(text = str(value))
+    
+    def restart(self):
+        self.flags.clear()
+        self.opened.clear()
+        self.mines.clear()
+        self.first_click = True
+
+        for btn in self.buttons.values():
+            btn.config(text="", bg="SystemButtonFace", state=tk.NORMAL, relief=tk.RAISED)
             
     def game_over(self, win):
         color = "green" if win else "red"
@@ -119,7 +128,12 @@ class MineSweeper:
             btn.config(state=tk.DISABLED)
             
         msg = "WIN 🎉" if win else "LOSS 💥"
-        messagebox.showinfo("Game Over", msg)
+        restart = messagebox.askyesno("Game Over", f"{msg}\n\nRestart game?")
+        
+        if restart:
+            self.restart()
+        else:
+            self.restart()
 
 if __name__ == "__main__":
     root = tk.Tk()
